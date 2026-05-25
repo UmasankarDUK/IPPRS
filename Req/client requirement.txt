@@ -1,0 +1,20 @@
+Sir,
+
+A demo version of the Pandemic Surge Simulation and Health System Preparedness Platform has been created for data simulation and concept validation. If found suitable, the concept may be shared with DUK for further development, refinement, and ideation.
+
+The application is designed as an AI-powered platform for real-time outbreak planning and emergency response support.
+
+Key features include:
+
+Dynamic simulation of outbreak scenarios through an “Operator Override” slider (0.25× to 4×), enabling users to increase or decrease active cases and visualize different surge conditions.
+Automatic recalculation of hospital bed demand, ICU occupancy, oxygen consumption, medicine requirements, and workforce needs based on simulated case load.
+Real-time updates to district and state dashboards, including GIS heatmaps, severity zones, epidemic curves, and AI-generated situational narratives.
+Integrated backend APIs for synchronized projections across districts, KPIs, forecasts, and AI-based narratives.
+Interactive frontend controls with live projected case counts, percentage change indicators, preset surge multipliers, and threshold-based warning alerts.
+Surge threshold logic inspired by Kerala’s COVID preparedness matrix, enabling automatic triggering of preparedness actions such as oxygen bed expansion and CFLTC activation.
+Predictive visualization of critical impacts including oxygen reserve depletion, ICU saturation, and district movement into Orange/Red alert categories during high surge simulations.
+Infrastructure planning modules to simulate conversion of auditoriums, schools, and community spaces into temporary COVID care centres and field hospitals.
+Functionality as a digital public health command centre supporting real-time “what-if” simulations for preparedness planning, resource optimization, and emergency decision-making.
+The platform is intended to support government departments and health authorities in strengthening pandemic preparedness and health system resilience through simulation-driven planning.
+
+Regards,

@@ -32,14 +32,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/sections/{sectionId}', [PlanController::class, 'updateSection'])->name('plans.sections.update');
     Route::delete('/sections/{sectionId}', [PlanController::class, 'destroySection'])->name('plans.sections.destroy');
 
-    // Ebola Daily Bulletin & Monitoring
+    // Ebola Dashboard
     Route::get('/ebola', [EbolaController::class, 'index'])->name('ebola.index');
-    Route::get('/ebola/create', [EbolaController::class, 'create'])->name('ebola.create');
-    Route::post('/ebola', [EbolaController::class, 'store'])->name('ebola.store');
-    Route::get('/ebola/{id}/edit', [EbolaController::class, 'edit'])->name('ebola.edit');
-    Route::patch('/ebola/{id}', [EbolaController::class, 'update'])->name('ebola.update');
-    Route::delete('/ebola/{id}', [EbolaController::class, 'destroy'])->name('ebola.destroy');
     Route::get('/ebola/bulletin/download', [EbolaController::class, 'downloadBulletinCsv'])->name('ebola.bulletin.download');
+
+    // Institution-Based Daily Report Entry (new primary workflow)
+    Route::get('/ebola/report/create', [EbolaReportController::class, 'create'])->name('ebola.report.create');
+    Route::post('/ebola/report', [EbolaReportController::class, 'store'])->name('ebola.report.store');
+    Route::get('/ebola/report/{id}/edit', [EbolaReportController::class, 'edit'])->name('ebola.report.edit');
+    Route::patch('/ebola/report/{id}', [EbolaReportController::class, 'update'])->name('ebola.report.update');
+    Route::delete('/ebola/report/{id}', [EbolaReportController::class, 'destroy'])->name('ebola.report.destroy');
 });
 
 Route::middleware('auth')->group(function () {

@@ -50,18 +50,112 @@ class PlanController extends Controller
     {
         $entity = $this->getPlanable($type, $id);
         
-        // Fetch all sections for the sidebar
-        $sections = $entity->planSections()->orderBy('section_order')->get();
+        $modules = [
+            'overview' => 'Nutshell Overview',
+            'demographics' => 'Geographic & Demographics',
+            'subdivisions' => 'Administrative Subdivisions',
+            'healthcare' => 'Healthcare Infrastructure',
+            'alternative' => 'Alternative Infrastructure'
+        ];
+
+        // Default to overview if no sectionId or invalid sectionId
+        if (!$sectionId || !array_key_exists($sectionId, $modules)) {
+            $sectionId = 'overview';
+        }
+        $activeModule = $sectionId;
         
-        // Select active section
-        $activeSection = null;
-        if ($sectionId) {
-            $activeSection = PlanSection::findOrFail($sectionId);
-        } else {
-            $activeSection = $sections->first();
+        // Data Collections
+        $overviewStats = [];
+        $subdivisionsList = collect();
+        $healthcareList = collect();
+        $alternativeList = collect();
+        
+        if ($type === 'district') {
+            // Nutshell Stats
+            $overviewStats['total_blocks'] = \App\Models\Block::where('district_id', $id)->count();
+            $overviewStats['total_localbodies'] = \App\Models\Localbody::whereHas('block', function($q) use ($id) {
+                $q->where('district_id', $id);
+            })->count();
+            $overviewStats['total_institutions'] = \App\Models\HealthInstitution::whereHas('localbody.block', function($q) use ($id) {
+                $q->where('district_id', $id);
+            })->count();
+            
+            $institutions = \App\Models\HealthInstitution::whereHas('localbody.block', function($q) use ($id) {
+                $q->where('district_id', $id);
+            })->get();
+            $overviewStats['total_beds'] = $institutions->sum('capacity_beds');
+            $overviewStats['total_icu'] = $institutions->sum('capacity_icu');
+            $overviewStats['total_oxygen_beds'] = $institutions->sum('capacity_oxygen_beds');
+            $overviewStats['total_oxygen_storage'] = $institutions->sum('oxygen_storage_liters');
+
+            // Module Data
+            if ($activeModule === 'subdivisions') {
+                $subdivisionsList = \App\Models\Block::where('district_id', $id)
+                    ->with('localbodies')
+                    ->withSum('localbodies as total_population', 'population')
+                    ->get();
+            }
+            if ($activeModule === 'healthcare') {
+                $healthcareList = \App\Models\HealthInstitution::whereHas('localbody.block', function($q) use ($id) {
+                    $q->where('district_id', $id);
+                })->with('localbody')->get();
+            }
+            if ($activeModule === 'alternative') {
+                $alternativeList = \App\Models\InfrastructureConversion::whereHas('localbody.block', function($q) use ($id) {
+                    $q->where('district_id', $id);
+                })->with('localbody')->get();
+            }
+        } elseif ($type === 'block') {
+            $overviewStats['total_localbodies'] = \App\Models\Localbody::where('block_id', $id)->count();
+            $overviewStats['total_institutions'] = \App\Models\HealthInstitution::whereHas('localbody', function($q) use ($id) {
+                $q->where('block_id', $id);
+            })->count();
+            
+            $institutions = \App\Models\HealthInstitution::whereHas('localbody', function($q) use ($id) {
+                $q->where('block_id', $id);
+            })->get();
+            
+            $overviewStats['total_beds'] = $institutions->sum('capacity_beds');
+            $overviewStats['total_icu'] = $institutions->sum('capacity_icu');
+            $overviewStats['total_oxygen_beds'] = $institutions->sum('capacity_oxygen_beds');
+            $overviewStats['total_oxygen_storage'] = $institutions->sum('oxygen_storage_liters');
+            
+            if ($activeModule === 'subdivisions') {
+                $subdivisionsList = \App\Models\Localbody::where('block_id', $id)->get();
+            }
+            if ($activeModule === 'healthcare') {
+                $healthcareList = \App\Models\HealthInstitution::whereHas('localbody', function($q) use ($id) {
+                    $q->where('block_id', $id);
+                })->with('localbody')->get();
+            }
+            if ($activeModule === 'alternative') {
+                $alternativeList = \App\Models\InfrastructureConversion::whereHas('localbody', function($q) use ($id) {
+                    $q->where('block_id', $id);
+                })->with('localbody')->get();
+            }
+        } elseif ($type === 'localbody') {
+            $overviewStats['total_institutions'] = \App\Models\HealthInstitution::where('localbody_id', $id)->count();
+            $institutions = \App\Models\HealthInstitution::where('localbody_id', $id)->get();
+            
+            $overviewStats['total_beds'] = $institutions->sum('capacity_beds');
+            $overviewStats['total_icu'] = $institutions->sum('capacity_icu');
+            $overviewStats['total_oxygen_beds'] = $institutions->sum('capacity_oxygen_beds');
+            $overviewStats['total_oxygen_storage'] = $institutions->sum('oxygen_storage_liters');
+            
+            if ($activeModule === 'healthcare') {
+                $healthcareList = \App\Models\HealthInstitution::where('localbody_id', $id)->get();
+            }
+            if ($activeModule === 'alternative') {
+                $alternativeList = \App\Models\InfrastructureConversion::where('localbody_id', $id)->get();
+            }
+        } elseif ($type === 'institution') {
+            $overviewStats['total_beds'] = $entity->capacity_beds;
+            $overviewStats['total_icu'] = $entity->capacity_icu;
+            $overviewStats['total_oxygen_beds'] = $entity->capacity_oxygen_beds;
+            $overviewStats['total_oxygen_storage'] = $entity->oxygen_storage_liters;
         }
 
-        return view('plans.show', compact('entity', 'type', 'sections', 'activeSection'));
+        return view('plans.show', compact('entity', 'type', 'modules', 'activeModule', 'overviewStats', 'subdivisionsList', 'healthcareList', 'alternativeList'));
     }
 
     /**

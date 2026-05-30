@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\EbolaController;
+use App\Http\Controllers\EbolaReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -35,6 +36,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Ebola Dashboard
     Route::get('/ebola', [EbolaController::class, 'index'])->name('ebola.index');
     Route::get('/ebola/bulletin/download', [EbolaController::class, 'downloadBulletinCsv'])->name('ebola.bulletin.download');
+
+    // Individual Case Routes
+    Route::get('/ebola/create', [EbolaController::class, 'create'])->name('ebola.create');
+    Route::post('/ebola', [EbolaController::class, 'store'])->name('ebola.store');
+    Route::get('/ebola/{id}/edit', [EbolaController::class, 'edit'])->name('ebola.edit');
+    Route::patch('/ebola/{id}', [EbolaController::class, 'update'])->name('ebola.update');
+    Route::delete('/ebola/{id}', [EbolaController::class, 'destroy'])->name('ebola.destroy');
 
     // Institution-Based Daily Report Entry (new primary workflow)
     Route::get('/ebola/report/create', [EbolaReportController::class, 'create'])->name('ebola.report.create');

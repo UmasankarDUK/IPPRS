@@ -47,7 +47,7 @@ class DatabaseSeeder extends Seeder
                     'name' => 'Alappuzha',
                     'state' => 'Kerala',
                     'code' => 'ALP',
-                    'population' => 2127063, // 2011 Census
+                    'population' => 2127789, // 2011 Census
                     'area_sq_km' => 1414.0,
                 ]
             );

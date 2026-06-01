@@ -14,14 +14,55 @@ class PlanController extends Controller
     /**
      * Display a directory of all plans.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $districts = District::where('state_id', 12)->withCount('blocks')->get();
-        $blocks = Block::with('district')->withCount('localbodies')->get();
-        $localbodies = Localbody::with('block')->withCount('healthInstitutions')->get();
-        $institutions = HealthInstitution::with('localbody')->get();
+        $districts = District::withCount('blocks')->orderBy('district_name_en')->get();
+        
+        // Block Filter: Filter blocks by District
+        $selectedDistrictForBlock = $request->input('block_district_id');
+        $blocksQuery = Block::with('district')->withCount('localbodies');
+        if ($selectedDistrictForBlock) {
+            $blocksQuery->where('distric_int_id', (int) $selectedDistrictForBlock);
+        }
+        $blocks = $blocksQuery->orderBy('block_name_en')->get();
 
-        return view('plans.index', compact('districts', 'blocks', 'localbodies', 'institutions'));
+        // Localbody Filter: Filter by District and Block using tbl_localbody_block_mapping
+        $selectedDistrictForLb = $request->input('lb_district_id');
+        $selectedBlockForLb = $request->input('lb_block_id');
+        
+        $localbodiesQuery = Localbody::with('block')->withCount('healthInstitutions');
+        
+        if ($selectedBlockForLb) {
+            $localbodiesQuery->whereIn('localbody_id', function($query) use ($selectedBlockForLb) {
+                $query->select('localbody_id')
+                      ->from('geo.tbl_localbody_block_mapping')
+                      ->where('block_id', (int) $selectedBlockForLb);
+            });
+        } elseif ($selectedDistrictForLb) {
+            $localbodiesQuery->where('dist_id', (int) $selectedDistrictForLb);
+        }
+        $localbodies = $localbodiesQuery->orderBy('localbody_name_en')->get();
+        
+        // Dynamically get blocks for the localbody block dropdown based on chosen district
+        $lbBlocks = collect();
+        if ($selectedDistrictForLb) {
+            $lbBlocks = Block::where('distric_int_id', (int) $selectedDistrictForLb)->orderBy('block_name_en')->get();
+        } else {
+            $lbBlocks = Block::orderBy('block_name_en')->get();
+        }
+
+        $institutions = HealthInstitution::with('localbody')->orderBy('name')->get();
+
+        return view('plans.index', compact(
+            'districts', 
+            'blocks', 
+            'localbodies', 
+            'institutions',
+            'selectedDistrictForBlock',
+            'selectedDistrictForLb',
+            'selectedBlockForLb',
+            'lbBlocks'
+        ));
     }
 
     /**
@@ -31,8 +72,14 @@ class PlanController extends Controller
     {
         switch (strtolower($type)) {
             case 'district':
+                if (is_numeric($id)) {
+                    return District::where('district_code', (int) $id)->firstOrFail();
+                }
                 return District::findOrFail($id);
             case 'block':
+                if (is_numeric($id)) {
+                    return Block::where('block_int_id', (int) $id)->firstOrFail();
+                }
                 return Block::findOrFail($id);
             case 'localbody':
                 return Localbody::findOrFail($id);
@@ -71,17 +118,17 @@ class PlanController extends Controller
         $alternativeList = collect();
         
         if ($type === 'district') {
+            $distCode = $entity->district_code;
+
             // Nutshell Stats
-            $overviewStats['total_blocks'] = \App\Models\Block::where('district_id', $id)->count();
-            $overviewStats['total_localbodies'] = \App\Models\Localbody::whereHas('block', function($q) use ($id) {
-                $q->where('district_id', $id);
-            })->count();
-            $overviewStats['total_institutions'] = \App\Models\HealthInstitution::whereHas('localbody.block', function($q) use ($id) {
-                $q->where('district_id', $id);
+            $overviewStats['total_blocks'] = \App\Models\Block::where('distric_int_id', $distCode)->count();
+            $overviewStats['total_localbodies'] = \App\Models\Localbody::where('dist_id', $distCode)->count();
+            $overviewStats['total_institutions'] = \App\Models\HealthInstitution::whereHas('localbody', function($q) use ($distCode) {
+                $q->where('dist_id', $distCode);
             })->count();
             
-            $institutions = \App\Models\HealthInstitution::whereHas('localbody.block', function($q) use ($id) {
-                $q->where('district_id', $id);
+            $institutions = \App\Models\HealthInstitution::whereHas('localbody', function($q) use ($distCode) {
+                $q->where('dist_id', $distCode);
             })->get();
             $overviewStats['total_beds'] = $institutions->sum('capacity_beds');
             $overviewStats['total_icu'] = $institutions->sum('capacity_icu');
@@ -90,29 +137,31 @@ class PlanController extends Controller
 
             // Module Data
             if ($activeModule === 'subdivisions') {
-                $subdivisionsList = \App\Models\Block::where('district_id', $id)
+                $subdivisionsList = \App\Models\Block::where('distric_int_id', $distCode)
                     ->with('localbodies')
                     ->withSum('localbodies as total_population', 'population')
                     ->get();
             }
             if ($activeModule === 'healthcare') {
-                $healthcareList = \App\Models\HealthInstitution::whereHas('localbody.block', function($q) use ($id) {
-                    $q->where('district_id', $id);
+                $healthcareList = \App\Models\HealthInstitution::whereHas('localbody', function($q) use ($distCode) {
+                    $q->where('dist_id', $distCode);
                 })->with('localbody')->get();
             }
             if ($activeModule === 'alternative') {
-                $alternativeList = \App\Models\InfrastructureConversion::whereHas('localbody.block', function($q) use ($id) {
-                    $q->where('district_id', $id);
+                $alternativeList = \App\Models\InfrastructureConversion::whereHas('localbody', function($q) use ($distCode) {
+                    $q->where('dist_id', $distCode);
                 })->with('localbody')->get();
             }
         } elseif ($type === 'block') {
-            $overviewStats['total_localbodies'] = \App\Models\Localbody::where('block_id', $id)->count();
-            $overviewStats['total_institutions'] = \App\Models\HealthInstitution::whereHas('localbody', function($q) use ($id) {
-                $q->where('block_id', $id);
+            $overviewStats['total_localbodies'] = \App\Models\Localbody::whereHas('blocks', function($q) use ($id) {
+                $q->where('block_int_id', (int) $id);
+            })->count();
+            $overviewStats['total_institutions'] = \App\Models\HealthInstitution::whereHas('localbody.blocks', function($q) use ($id) {
+                $q->where('block_int_id', (int) $id);
             })->count();
             
-            $institutions = \App\Models\HealthInstitution::whereHas('localbody', function($q) use ($id) {
-                $q->where('block_id', $id);
+            $institutions = \App\Models\HealthInstitution::whereHas('localbody.blocks', function($q) use ($id) {
+                $q->where('block_int_id', (int) $id);
             })->get();
             
             $overviewStats['total_beds'] = $institutions->sum('capacity_beds');
@@ -121,16 +170,18 @@ class PlanController extends Controller
             $overviewStats['total_oxygen_storage'] = $institutions->sum('oxygen_storage_liters');
             
             if ($activeModule === 'subdivisions') {
-                $subdivisionsList = \App\Models\Localbody::where('block_id', $id)->get();
+                $subdivisionsList = \App\Models\Localbody::whereHas('blocks', function($q) use ($id) {
+                    $q->where('block_int_id', (int) $id);
+                })->get();
             }
             if ($activeModule === 'healthcare') {
-                $healthcareList = \App\Models\HealthInstitution::whereHas('localbody', function($q) use ($id) {
-                    $q->where('block_id', $id);
+                $healthcareList = \App\Models\HealthInstitution::whereHas('localbody.blocks', function($q) use ($id) {
+                    $q->where('block_int_id', (int) $id);
                 })->with('localbody')->get();
             }
             if ($activeModule === 'alternative') {
-                $alternativeList = \App\Models\InfrastructureConversion::whereHas('localbody', function($q) use ($id) {
-                    $q->where('block_id', $id);
+                $alternativeList = \App\Models\InfrastructureConversion::whereHas('localbody.blocks', function($q) use ($id) {
+                    $q->where('block_int_id', (int) $id);
                 })->with('localbody')->get();
             }
         } elseif ($type === 'localbody') {

@@ -102,7 +102,8 @@
         </div>
 
         <!-- Tiered Navigation & Tables -->
-        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden" x-data="{ activeTab: 'districts' }">
+        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden" 
+             x-data="{ activeTab: '{{ request()->input('active_tab', 'districts') }}' }">
             
             <!-- Tabs -->
             <div class="border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 px-6 py-4">
@@ -162,6 +163,33 @@
 
                 <!-- Blocks Tab -->
                 <div x-show="activeTab === 'blocks'" x-transition>
+                    
+                    <!-- Block Filter Form -->
+                    <div class="mb-6 bg-slate-50 dark:bg-gray-900/40 p-4 rounded-xl border border-slate-100 dark:border-gray-800">
+                        <form action="{{ route('plans.index') }}" method="GET" class="flex flex-col sm:flex-row items-end gap-4">
+                            <input type="hidden" name="active_tab" value="blocks">
+                            <div class="flex-1 min-w-[200px]">
+                                <label for="block_district_id" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 font-sans">Filter by District</label>
+                                <select name="block_district_id" id="block_district_id" onchange="this.form.submit();" class="w-full bg-white dark:bg-gray-850 text-sm border border-slate-200 dark:border-gray-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                    <option value="">-- All Districts --</option>
+                                    @foreach ($districts as $d)
+                                        <option value="{{ $d->id }}" {{ ($selectedDistrictForBlock ?? '') == $d->id ? 'selected' : '' }}>{{ $d->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition cursor-pointer">
+                                    Apply Filter
+                                </button>
+                                @if($selectedDistrictForBlock ?? '')
+                                    <a href="{{ route('plans.index', ['active_tab' => 'blocks']) }}" class="px-4 py-2 border border-slate-200 dark:border-gray-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-gray-800 rounded-lg text-sm font-semibold transition">
+                                        Clear
+                                    </a>
+                                @endif
+                            </div>
+                        </form>
+                    </div>
+
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead>
@@ -177,7 +205,7 @@
                                 @forelse ($blocks as $block)
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">{{ $block->name }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $block->district->name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $block->district?->name ?? 'N/A' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ number_format($block->population) }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $block->area_sq_km }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -196,6 +224,44 @@
 
                 <!-- Localbodies Tab -->
                 <div x-show="activeTab === 'localbodies'" x-transition>
+                    
+                    <!-- Localbody Cascading Filter Form -->
+                    <div class="mb-6 bg-slate-50 dark:bg-gray-900/40 p-4 rounded-xl border border-slate-100 dark:border-gray-800">
+                        <form action="{{ route('plans.index') }}" method="GET" class="flex flex-col sm:flex-row items-end gap-4" id="lb-filter-form">
+                            <input type="hidden" name="active_tab" value="localbodies">
+                            
+                            <!-- District Dropdown -->
+                            <div class="flex-1 min-w-[200px]">
+                                <label for="lb_district_id" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 font-sans">Filter by District</label>
+                                <select name="lb_district_id" id="lb_district_id" onchange="document.getElementById('lb_block_id').value=''; document.getElementById('lb-filter-form').submit();" class="w-full bg-white dark:bg-gray-850 text-sm border border-slate-200 dark:border-gray-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                    <option value="">-- All Districts --</option>
+                                    @foreach ($districts as $d)
+                                        <option value="{{ $d->id }}" {{ ($selectedDistrictForLb ?? '') == $d->id ? 'selected' : '' }}>{{ $d->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <!-- Block Dropdown (Cascading) -->
+                            <div class="flex-1 min-w-[200px]">
+                                <label for="lb_block_id" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 font-sans">Filter by Block</label>
+                                <select name="lb_block_id" id="lb_block_id" onchange="document.getElementById('lb-filter-form').submit();" class="w-full bg-white dark:bg-gray-850 text-sm border border-slate-200 dark:border-gray-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                    <option value="">-- All Blocks --</option>
+                                    @foreach ($lbBlocks ?? [] as $b)
+                                        <option value="{{ $b->id }}" {{ ($selectedBlockForLb ?? '') == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="flex gap-2">
+                                @if(($selectedDistrictForLb ?? '') || ($selectedBlockForLb ?? ''))
+                                    <a href="{{ route('plans.index', ['active_tab' => 'localbodies']) }}" class="px-4 py-2 border border-slate-200 dark:border-gray-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-gray-800 rounded-lg text-sm font-semibold transition">
+                                        Clear Filters
+                                    </a>
+                                @endif
+                            </div>
+                        </form>
+                    </div>
+
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead>
@@ -211,7 +277,7 @@
                                 @forelse ($localbodies as $lb)
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">{{ $lb->name }} GP</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $lb->block->name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $lb->block?->name ?? 'N/A' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ number_format($lb->population) }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 dark:text-red-400 font-semibold">{{ number_format($lb->vulnerable_population) }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

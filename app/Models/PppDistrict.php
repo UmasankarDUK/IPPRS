@@ -20,7 +20,11 @@ class PppDistrict extends Model
         'district_headquarter',
         'geom_boundary',
         'geom_spatial',
-        'is_active'
+        'is_active',
+        'state',
+        'code',
+        'population',
+        'area_sq_km'
     ];
 
     public function state()

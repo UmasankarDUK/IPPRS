@@ -58,7 +58,11 @@ class MigrateLegacyToPpp extends Command
                         'district_name_en' => $d->name,
                         'is_active' => $d->is_active,
                         'created_at' => now(),
-                        'updated_at' => now()
+                        'updated_at' => now(),
+                        'state' => $d->state,
+                        'code' => $d->code,
+                        'population' => $d->population,
+                        'area_sq_km' => $d->area_sq_km
                     ]
                 );
                 $districtMappings[$d->id] = $uuid;
@@ -78,9 +82,12 @@ class MigrateLegacyToPpp extends Command
                         'block_id' => $uuid,
                         'block_name_en' => $b->name,
                         'is_active' => true,
-                        'district_id' => $districtUuid, // Additive linkage
+                        'district_id' => $districtUuid, // Additive linkage (UUID)
                         'block_int_id' => (int) $b->id,
                         'distric_int_id' => (int) $b->district_id,
+                        'code' => $b->code,
+                        'population' => $b->population,
+                        'area_sq_km' => $b->area_sq_km,
                         'created_at' => now(),
                         'updated_at' => now()
                     ]
@@ -95,7 +102,30 @@ class MigrateLegacyToPpp extends Command
             foreach ($legacyLocalbodies as $l) {
                 $uuid = (string) Str::uuid();
                 $blockUuid = $blockMappings[$l->block_id] ?? null;
+                
+                // Fetch district_id from blocks
+                $legacyBlock = DB::table('blocks')->where('id', $l->block_id)->first();
+                $distId = $legacyBlock ? (int) $legacyBlock->district_id : 0;
 
+                // Backfill to master_local_body
+                DB::table('geo.master_local_body')->updateOrInsert(
+                    ['localbody_id' => (int) $l->id],
+                    [
+                        'localbody_code' => $l->code,
+                        'dist_id' => $distId,
+                        'localbody_name_en' => $l->name,
+                        'localbody_name_mal' => $l->name,
+                        'localbody_type_id' => 1,
+                        'is_active' => true,
+                        'block_id' => $blockUuid,
+                        'type' => $l->type,
+                        'code' => $l->code,
+                        'population' => $l->population,
+                        'vulnerable_population' => $l->vulnerable_population
+                    ]
+                );
+
+                // Backfill to master_lsg for safety
                 DB::table('geo.master_lsg')->updateOrInsert(
                     ['lsg_code' => $l->code],
                     [
@@ -138,19 +168,22 @@ class MigrateLegacyToPpp extends Command
 
                 // Create Subordinate Facility
                 $facUuid = (string) Str::uuid();
-                $facTypeId = (string) Str::uuid(); // Default placeholder Type ID
-
+                
                 // Establish default facility type first in references
-                DB::table('ref.master_facility_type')->updateOrInsert(
-                    ['facility_type_code' => 'GEN_HOSP'],
-                    [
+                $existingType = DB::table('ref.master_facility_type')->where('facility_type_code', 'GEN_HOSP')->first();
+                if ($existingType) {
+                    $facTypeId = $existingType->facility_type_id;
+                } else {
+                    $facTypeId = (string) Str::uuid(); // Default placeholder Type ID
+                    DB::table('ref.master_facility_type')->insert([
                         'facility_type_id' => $facTypeId,
+                        'facility_type_code' => 'GEN_HOSP',
                         'facility_type_name_en' => 'General Hospital',
                         'is_active' => true,
                         'created_at' => now(),
                         'updated_at' => now()
-                    ]
-                );
+                    ]);
+                }
 
                 DB::table('org.facility')->updateOrInsert(
                     ['facility_code' => 'FAC_' . $h->id],

@@ -20,7 +20,10 @@ class PppBlock extends Model
         'block_type',
         'geom_boundary',
         'geom_spatial',
-        'is_active'
+        'is_active',
+        'code',
+        'population',
+        'area_sq_km'
     ];
 
     public function district()

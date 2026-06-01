@@ -10,6 +10,6 @@ class InfrastructureConversion extends Model
 
     public function localbody()
     {
-        return $this->belongsTo(Localbody::class);
+        return $this->belongsTo(Localbody::class, 'localbody_id', 'localbody_id');
     }
 }

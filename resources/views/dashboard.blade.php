@@ -30,7 +30,7 @@
             
             <div class="flex items-center space-x-3">
                 <a href="{{ route('plans.index') }}" class="px-4 py-2 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition duration-150 cursor-pointer">
-                    Plan Archive
+                    Digital Plan
                 </a>
                 <a href="{{ route('search.index') }}" class="px-4 py-2 text-xs font-bold rounded-lg bg-[#006B4F] hover:bg-[#00875F] text-white shadow-lg shadow-emerald-900/20 hover:shadow-emerald-900/30 transition duration-150 cursor-pointer">
                     Global Plan Search
@@ -554,7 +554,7 @@
                     'Provide daily updates to block medical administration.'
                 ];
                 return [
-                    'Maintain daily surveillance, database updates, and digital archive maintenance.',
+                    'Maintain daily surveillance, database updates, and digital plan maintenance.',
                     'Execute monthly checks on critical care supplies, drug arrays, and ASHA gear.',
                     'Organize virtual critical response training drills for primary clinical staff.',
                     'Coordinate block-level diagnostic facility reports.'
@@ -641,7 +641,7 @@
                     return `STANDARD OUTBREAK REPORT // LEVEL ${mult}x // ACTIVE CASES projected at ${cases}. General beds are occupied at ${this.bedSaturationPct}% of baseline. Critical care ICU stands stable at ${this.icuSaturationPct}%. Category B protocols are active: cylinder buffer systems are on 12-hour alert state-wide. No emergency conversions required. Project supply lines healthy with ${this.oxygenDepletionHours} of storage runway.`;
                 }
 
-                return `NORMAL STANDBY BRIEF // LEVEL ${mult}x // ACTIVE CASES projected at ${cases}. Outbreak metrics are completely within baseline limits. Bed occupancy (${beds}) and critical ICU care (${icus}) are fully covered. All 21 emergency structures remain on standby. Clinical centers are executing routine ward training and archive checks. System is highly stable.`;
+                return `NORMAL STANDBY BRIEF // LEVEL ${mult}x // ACTIVE CASES projected at ${cases}. Outbreak metrics are completely within baseline limits. Bed occupancy (${beds}) and critical ICU care (${icus}) are fully covered. All 21 emergency structures remain on standby. Clinical centers are executing routine ward training and plan checks. System is highly stable.`;
             }
         };
     }

@@ -8,7 +8,7 @@
         <nav class="flex mb-6" aria-label="Breadcrumb">
             <ol class="flex items-center space-x-2">
                 <li>
-                    <a href="{{ route('plans.index') }}" class="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700">Archive</a>
+                    <a href="{{ route('plans.index') }}" class="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700">Digital Plan</a>
                 </li>
                 <li class="flex items-center">
                     <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">

@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Block extends Model
 {
+    protected $table = 'blocks';
+
     protected $fillable = ['district_id', 'name', 'code', 'population', 'area_sq_km'];
 
     public function district()

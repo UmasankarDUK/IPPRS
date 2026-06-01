@@ -19,7 +19,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Global Search
     Route::get('/search', [SearchController::class, 'index'])->name('search.index');
 
-    // Digital Archive Tiers Directory
+    // Digital Plan Tiers Directory
     Route::get('/plans', [PlanController::class, 'index'])->name('plans.index');
     
     // GitBook style plan viewer

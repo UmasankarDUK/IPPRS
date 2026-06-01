@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Localbody extends Model
 {
+    protected $table = 'localbodies';
+
     protected $fillable = ['block_id', 'name', 'type', 'code', 'population', 'vulnerable_population'];
 
     public function block()

@@ -8,7 +8,7 @@
         <div class="mb-10 text-center md:text-left md:flex md:items-center md:justify-between">
             <div class="flex-1 min-w-0">
                 <h2 class="text-3xl font-extrabold leading-7 text-gray-900 dark:text-white sm:text-4xl sm:truncate tracking-tight font-sans">
-                    Pandemic Preparedness Digital Archive
+                    Pandemic Preparedness Digital Plan
                 </h2>
                 <p class="mt-2 text-md text-gray-500 dark:text-gray-400">
                      Timely updated digital repository converting static administrative plans to searchable, dynamic digital modules.

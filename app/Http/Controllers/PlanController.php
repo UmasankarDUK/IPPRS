@@ -30,7 +30,7 @@ class PlanController extends Controller
         $selectedDistrictForLb = $request->input('lb_district_id');
         $selectedBlockForLb = $request->input('lb_block_id');
         
-        $localbodiesQuery = Localbody::with('block')->withCount('healthInstitutions');
+        $localbodiesQuery = Localbody::with('blocks')->withCount('healthInstitutions');
         
         if ($selectedBlockForLb) {
             $localbodiesQuery->whereIn('localbody_id', function($query) use ($selectedBlockForLb) {

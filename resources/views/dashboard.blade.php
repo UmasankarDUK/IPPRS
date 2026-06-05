@@ -10,7 +10,7 @@
     <div class="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-sky-600/5 rounded-full blur-3xl translate-y-1/2 pointer-events-none"></div>
 
     <!-- Top Navigation Command Header -->
-    <header class="relative bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 shadow-sm sticky top-0 z-50">
+    <header class="relative bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 shadow-sm sticky top-0 z-20">
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div class="flex items-center space-x-4">
                 <div class="relative flex h-3 w-3">

@@ -57,4 +57,41 @@
         <p>&copy; {{ date('Y') }} Department of Health and Family Welfare, Government of Kerala.</p>
         <p>All rights reserved.</p>
     </div>
+
+    <!-- Quick Login Switcher -->
+    <div class="mt-8 border-t border-gray-200 pt-6">
+        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">
+            Quick Login (Role-based testing)
+        </h3>
+        <div class="grid grid-cols-2 gap-3">
+            <button type="button" onclick="quickLogin('state@ipprs.in', 'password')"
+                    class="flex flex-col text-left p-3 border border-gray-200 hover:border-indigo-500 rounded-xl hover:bg-indigo-50/10 transition cursor-pointer">
+                <span class="text-xs font-bold text-gray-900">State Admin</span>
+                <span class="text-[10px] text-gray-500 mt-1">Full state-wide scope</span>
+            </button>
+            <button type="button" onclick="quickLogin('district@ipprs.in', 'password')"
+                    class="flex flex-col text-left p-3 border border-gray-200 hover:border-rose-500 rounded-xl hover:bg-rose-50/10 transition cursor-pointer">
+                <span class="text-xs font-bold text-gray-900">District Admin</span>
+                <span class="text-[10px] text-gray-500 mt-1">Alapuzha District</span>
+            </button>
+            <button type="button" onclick="quickLogin('block@ipprs.in', 'password')"
+                    class="flex flex-col text-left p-3 border border-gray-200 hover:border-blue-500 rounded-xl hover:bg-blue-50/10 transition cursor-pointer">
+                <span class="text-xs font-bold text-gray-900">Block Admin</span>
+                <span class="text-[10px] text-gray-500 mt-1">Muthukulam Block</span>
+            </button>
+            <button type="button" onclick="quickLogin('gp@ipprs.in', 'password')"
+                    class="flex flex-col text-left p-3 border border-gray-200 hover:border-emerald-500 rounded-xl hover:bg-emerald-50/10 transition cursor-pointer">
+                <span class="text-xs font-bold text-gray-900">GP Admin</span>
+                <span class="text-[10px] text-gray-500 mt-1">Muthukulam GP</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function quickLogin(email, password) {
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = password;
+            document.querySelector('form').submit();
+        }
+    </script>
 </x-guest-layout>

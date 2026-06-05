@@ -17,8 +17,7 @@ class SearchController extends Controller
 
         if (strlen(trim($query)) >= 2) {
             // Retrieve matching plan sections
-            $sections = PlanSection::with('planable')
-                ->where('title', 'like', "%{$query}%")
+            $sections = PlanSection::where('title', 'like', "%{$query}%")
                 ->orWhere('content', 'like', "%{$query}%")
                 ->get();
 

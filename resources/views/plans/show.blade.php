@@ -36,26 +36,87 @@
         </div>
 
         <!-- Modules List -->
-        <div class="flex-1 overflow-y-auto p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                    System Modules
-                </h3>
+        <div class="flex-1 overflow-y-auto p-6 space-y-6">
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                        System Modules
+                    </h3>
+                </div>
+                
+                <nav class="space-y-1" aria-label="System Modules">
+                    @foreach ($modules as $key => $val)
+                        @if(!is_array($val) && !str_starts_with($key, 'section_'))
+                            <a href="{{ route('plans.show', ['type' => $type, 'id' => $entity->id, 'sectionId' => $key]) }}" 
+                               class="group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-150 mb-1
+                               @if($activeModule === $key)
+                                   bg-indigo-600 text-white shadow-sm
+                               @else
+                                   text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white
+                               @endif">
+                                <span class="truncate">{{ $val }}</span>
+                            </a>
+                        @endif
+                    @endforeach
+                </nav>
             </div>
-            
-            <nav class="space-y-1.5" aria-label="System Modules">
-                @foreach ($modules as $key => $title)
-                    <a href="{{ route('plans.show', ['type' => $type, 'id' => $entity->id, 'sectionId' => $key]) }}" 
-                       class="group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-150 mb-2
-                       @if($activeModule === $key)
-                           bg-indigo-600 text-white shadow-sm
-                       @else
-                           text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white
-                       @endif">
-                        <span class="truncate">{{ $title }}</span>
+
+            <!-- Grouped Study Modules -->
+            @foreach ($modules as $groupKey => $group)
+                @if(is_array($group))
+                    <div>
+                        <h4 class="px-3 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+                            {{ $group['title'] }}
+                        </h4>
+                        <nav class="space-y-0.5" aria-label="{{ $group['title'] }}">
+                            @foreach ($group['submodules'] as $key => $title)
+                                <a href="{{ route('plans.show', ['type' => $type, 'id' => $entity->id, 'sectionId' => $key]) }}" 
+                                   class="group flex items-center px-4 py-1.5 text-xs font-medium rounded-lg transition-colors duration-150
+                                   @if($activeModule === $key)
+                                       bg-indigo-500 text-white shadow-sm
+                                   @else
+                                       text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white
+                                   @endif">
+                                    <span class="truncate">{{ $title }}</span>
+                                </a>
+                            @endforeach
+                        </nav>
+                    </div>
+                @endif
+            @endforeach
+
+            <!-- Custom Chapters -->
+            <div>
+                <div class="flex justify-between items-center mb-2 px-3">
+                    <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                        Custom Chapters
+                    </h3>
+                    <a href="{{ route('plans.sections.create', ['type' => $type, 'id' => $entity->id]) }}" 
+                       class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                        + Add
                     </a>
-                @endforeach
-            </nav>
+                </div>
+                <nav class="space-y-1">
+                    @php $hasCustom = false; @endphp
+                    @foreach ($modules as $key => $title)
+                        @if(str_starts_with($key, 'section_'))
+                            @php $hasCustom = true; @endphp
+                            <a href="{{ route('plans.show', ['type' => $type, 'id' => $entity->id, 'sectionId' => $key]) }}" 
+                               class="group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-150 mb-1
+                               @if($activeModule === $key)
+                                   bg-indigo-600 text-white shadow-sm
+                               @else
+                                   text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white
+                               @endif">
+                                <span class="truncate">{{ $title }}</span>
+                            </a>
+                        @endif
+                    @endforeach
+                    @if(!$hasCustom)
+                        <p class="px-3 text-xs text-gray-400 italic">No custom chapters yet.</p>
+                    @endif
+                </nav>
+            </div>
         </div>
         
     </div>
@@ -65,9 +126,15 @@
         
         <div class="mb-10 border-b border-gray-100 dark:border-gray-800 pb-6">
             <h2 class="text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
-                {{ $modules[$activeModule] }}
+                {{ $activeModuleTitle }}
             </h2>
         </div>
+
+        @if(session('success'))
+            <div class="mb-6 p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-400 rounded-xl text-sm font-semibold">
+                {{ session('success') }}
+            </div>
+        @endif
         
         @if($activeModule === 'overview')
             <!-- Nutshell Overview View -->
@@ -283,6 +350,293 @@
                 </div>
                 @else
                     <p class="text-gray-500">No alternative infrastructure identified for conversion.</p>
+                @endif
+            </div>
+
+        @elseif(isset($activeSectionContent))
+            <!-- Dynamic Custom Section Content -->
+            <div class="max-w-5xl mx-auto">
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 shadow-sm">
+                    <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-100 dark:border-gray-800">
+                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Plan Chapter</h3>
+                        <div class="flex space-x-2">
+                            <a href="{{ route('plans.sections.edit', ['sectionId' => $activeSectionContent->id]) }}" 
+                               class="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                Edit Chapter
+                            </a>
+                            <form action="{{ route('plans.sections.destroy', ['sectionId' => $activeSectionContent->id]) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this chapter?');" class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md text-xs font-medium text-white bg-red-600 hover:bg-red-700">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="text-gray-900 dark:text-gray-100 leading-relaxed prose dark:prose-invert max-w-none">
+                        {!! $activeSectionContent->content !!}
+                    </div>
+                </div>
+            </div>
+
+        @elseif(str_starts_with($activeModule, 'study_'))
+            <!-- Excel Study Modules Dynamic Table -->
+            @php
+                $tableFields = [
+                    'study_disease_trend' => [
+                        'disease' => 'Disease',
+                        'y2023' => 'Cases 2023',
+                        'y2024' => 'Cases 2024',
+                        'y2025' => 'Cases 2025',
+                        'trend' => 'Trend Trend',
+                    ],
+                    'study_dengue_distribution' => [
+                        'lsgd' => 'LSGD / GP Name',
+                        'y2023' => '2023 Cases',
+                        'y2024' => '2024 Cases',
+                        'y2025' => '2025 Cases',
+                        'total' => 'Total Cases',
+                    ],
+                    'study_lepto_distribution' => [
+                        'lsgd' => 'LSGD / GP Name',
+                        'y2023' => '2023 Cases',
+                        'y2024' => '2024 Cases',
+                        'y2025' => '2025 Cases',
+                        'total' => 'Total Cases',
+                    ],
+                    'study_hepa_distribution' => [
+                        'lsgd' => 'LSGD / GP Name',
+                        'y2023' => '2023 Cases',
+                        'y2024' => '2024 Cases',
+                        'y2025' => '2025 Cases',
+                        'total' => 'Total Cases',
+                    ],
+                    'study_outcome_trend' => [
+                        'disease' => 'Disease Type',
+                        'age_group' => 'Age Group',
+                        'gender_male' => 'Male Cases',
+                        'gender_female' => 'Female Cases',
+                        'survived' => 'Survived',
+                        'deceased' => 'Deceased',
+                        'treated' => 'Treated',
+                    ],
+                    'study_transmission_trend' => [
+                        'mode_of_transmission' => 'Mode of Transmission',
+                        'cases' => 'No. of Cases',
+                        'deaths' => 'No. of Deaths',
+                    ],
+                    'study_vector_disease' => [
+                        'disease' => 'Disease',
+                        'cases' => 'No. of Cases',
+                        'deaths' => 'No. of Deaths',
+                    ],
+                    'study_water_disease' => [
+                        'disease' => 'Disease',
+                        'cases' => 'No. of Cases',
+                        'deaths' => 'No. of Deaths',
+                    ],
+                    'study_air_disease' => [
+                        'disease' => 'Disease',
+                        'cases' => 'No. of Cases',
+                        'deaths' => 'No. of Deaths',
+                    ],
+                    'study_blood_disease' => [
+                        'disease' => 'Disease',
+                        'cases' => 'No. of Cases',
+                        'deaths' => 'No. of Deaths',
+                    ],
+                    'study_zoonotic_disease' => [
+                        'disease' => 'Disease',
+                        'cases' => 'No. of Cases',
+                        'deaths' => 'No. of Deaths',
+                    ],
+                    'study_committee_member' => [
+                        'name' => 'Name',
+                        'designation' => 'Designation',
+                        'department' => 'Department',
+                        'role_in_committee' => 'Role in Committee',
+                        'contact_number' => 'Contact Number',
+                    ],
+                    'study_response_workforce' => [
+                        'team_name' => 'Team Name',
+                        'composition' => 'Composition',
+                        'key_responsibilities' => 'Responsibilities',
+                        'team_leader' => 'Team Leader',
+                    ],
+                    'study_screening_checkpoint' => [
+                        'location' => 'Location',
+                        'type' => 'Checkpoint Type',
+                        'staff_deployed' => 'Staff Deployed',
+                        'screening_method' => 'Screening Method',
+                        'reporting_authority' => 'Reporting Authority',
+                    ],
+                    'study_control_room_team' => [
+                        'role' => 'Role',
+                        'name' => 'Name',
+                        'designation' => 'Designation',
+                        'contact_number' => 'Contact Number',
+                        'responsibility' => 'Responsibility',
+                    ],
+                    'study_warning_trigger' => [
+                        'category' => 'Category',
+                        'trigger_point' => 'Trigger Point',
+                        'immediate_action' => 'Immediate Action',
+                    ],
+                    'study_communicator' => [
+                        'channel' => 'Channel',
+                        'responsible_person' => 'Responsible Person',
+                        'contact' => 'Contact Info',
+                    ],
+                    'study_reporting_schedule' => [
+                        'to_whom' => 'To Whom',
+                        'what_to_report' => 'What to Report',
+                        'frequency' => 'Frequency',
+                        'nodal_person' => 'Nodal Person',
+                    ],
+                    'study_resource_inventory' => [
+                        'resource_category' => 'Resource Category',
+                        'source' => 'Source',
+                        'contact' => 'Contact Info',
+                    ],
+                    'study_collaboration' => [
+                        'organization' => 'Organization',
+                        'type' => 'Type',
+                        'support_offered' => 'Support Offered',
+                        'contact_person' => 'Contact Person',
+                    ],
+                    'study_coordination' => [
+                        'department' => 'Department',
+                        'representative' => 'Representative',
+                        'key_role' => 'Key Role',
+                        'contact' => 'Contact Info',
+                    ],
+                    'study_facility_conversion' => [
+                        'facility_name' => 'Facility Name',
+                        'facility_type' => 'Facility Type',
+                        'no_of_buildings' => 'No. of Buildings',
+                        'ward' => 'Ward',
+                        'surge_capacity_beds' => 'Surge Beds',
+                        'nodal_person' => 'Nodal Person',
+                    ]
+                ];
+                
+                $fields = $tableFields[$activeModule] ?? [];
+                $user = auth()->user();
+                $blockDistMap = \App\Models\Block::pluck('distric_int_id', 'block_int_id')->toArray();
+                
+                // Determine if user can add a record
+                $canAdd = false;
+                if ($user) {
+                    if ($user->role === 'state') {
+                        $canAdd = true;
+                    } elseif ($user->role === 'district' && $type === 'block') {
+                        if ($entity->distric_int_id == $user->district_code) {
+                            $canAdd = true;
+                        }
+                    } elseif ($user->role === 'district' && $type === 'district') {
+                        if ($entity->district_code == $user->district_code) {
+                            $canAdd = true;
+                        }
+                    } elseif ($user->role === 'block' && $type === 'block') {
+                        if ($entity->block_int_id == $user->block_int_id) {
+                            $canAdd = true;
+                        }
+                    } elseif ($user->role === 'localbody') {
+                        if ($entity->block && $entity->block->block_int_id == $user->block_int_id) {
+                            $canAdd = true;
+                        }
+                    }
+                }
+                $addBlockId = ($type === 'block') ? $entity->block_int_id : (($type === 'localbody' && $entity->block) ? $entity->block->block_int_id : 39);
+            @endphp
+
+            <div class="max-w-6xl mx-auto">
+                <!-- Add Button -->
+                @if($canAdd)
+                    <div class="mb-6 flex justify-end">
+                        <a href="{{ route('study.create', ['table' => $activeModule, 'block_int_id' => $addBlockId]) }}"
+                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition">
+                            + Add New Entry
+                        </a>
+                    </div>
+                @endif
+
+                @if($studyRecords->count() > 0)
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-900/50">
+                                    <tr>
+                                        @foreach($fields as $fieldName => $label)
+                                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ $label }}</th>
+                                        @endforeach
+                                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-40">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                    @foreach($studyRecords as $row)
+                                        @php
+                                            $canEdit = false;
+                                            if ($user) {
+                                                if ($user->role === 'state') {
+                                                    $canEdit = true;
+                                                } elseif ($user->role === 'district') {
+                                                    $distCode = $blockDistMap[$row->block_int_id] ?? null;
+                                                    if ($distCode == $user->district_code) {
+                                                        $canEdit = true;
+                                                    }
+                                                } elseif ($user->role === 'block' || $user->role === 'localbody') {
+                                                    if ($row->block_int_id == $user->block_int_id) {
+                                                        $canEdit = true;
+                                                    }
+                                                }
+                                            }
+                                        @endphp
+                                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition">
+                                            @foreach($fields as $fieldName => $label)
+                                                <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-150">
+                                                    @if(is_numeric($row->$fieldName))
+                                                        <span class="font-mono">{{ number_format($row->$fieldName) }}</span>
+                                                    @else
+                                                        {{ $row->$fieldName }}
+                                                    @endif
+                                                </td>
+                                            @endforeach
+                                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                                @if($canEdit)
+                                                    <div class="flex justify-center space-x-2">
+                                                        <a href="{{ route('study.edit', ['table' => $activeModule, 'id' => $row->id]) }}" 
+                                                           class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 font-semibold">
+                                                            Edit
+                                                        </a>
+                                                        <span class="text-gray-300">|</span>
+                                                        <form action="{{ route('study.destroy', ['table' => $activeModule, 'id' => $row->id]) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this record?');" class="inline">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="text-red-600 dark:text-red-400 hover:text-red-900 font-semibold bg-transparent border-0 p-0 cursor-pointer">
+                                                                Delete
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                @else
+                                                    <span class="text-gray-400 dark:text-gray-600 text-xs italic">View Only</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @else
+                    <div class="p-12 text-center bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">No records available for this jurisdiction.</p>
+                        @if($canAdd)
+                            <a href="{{ route('study.create', ['table' => $activeModule, 'block_int_id' => $addBlockId]) }}" class="mt-4 inline-flex items-center text-sm font-semibold text-indigo-600 hover:underline">
+                                Create the first entry &rarr;
+                            </a>
+                        @endif
+                    </div>
                 @endif
             </div>
         @endif

@@ -33,6 +33,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/sections/{sectionId}', [PlanController::class, 'updateSection'])->name('plans.sections.update');
     Route::delete('/sections/{sectionId}', [PlanController::class, 'destroySection'])->name('plans.sections.destroy');
 
+    // Excel Study Table CRUD
+    Route::get('/admin/study/{table}/create', [\App\Http\Controllers\StudyCrudController::class, 'create'])->name('study.create');
+    Route::post('/admin/study/{table}', [\App\Http\Controllers\StudyCrudController::class, 'store'])->name('study.store');
+    Route::get('/admin/study/{table}/{id}/edit', [\App\Http\Controllers\StudyCrudController::class, 'edit'])->name('study.edit');
+    Route::patch('/admin/study/{table}/{id}', [\App\Http\Controllers\StudyCrudController::class, 'update'])->name('study.update');
+    Route::delete('/admin/study/{table}/{id}', [\App\Http\Controllers\StudyCrudController::class, 'destroy'])->name('study.destroy');
+
     // Ebola Dashboard
     Route::get('/ebola', [EbolaController::class, 'index'])->name('ebola.index');
     Route::get('/ebola/bulletin/download', [EbolaController::class, 'downloadBulletinCsv'])->name('ebola.bulletin.download');

@@ -8,6 +8,7 @@ use App\Models\Localbody;
 use App\Models\HealthInstitution;
 use App\Models\PlanSection;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class PlanController extends Controller
 {
@@ -102,12 +103,86 @@ class PlanController extends Controller
             'demographics' => 'Geographic & Demographics',
             'subdivisions' => 'Administrative Subdivisions',
             'healthcare' => 'Healthcare Infrastructure',
-            'alternative' => 'Alternative Infrastructure'
+            'alternative' => 'Alternative Infrastructure',
+            
+            // Excel Study Modules Grouped
+            'disease_trends' => [
+                'title' => 'Disease Surveillance Trends',
+                'submodules' => [
+                    'study_disease_trend' => 'Block-Level Disease Trend',
+                    'study_dengue_distribution' => 'Dengue LSGD Distribution',
+                    'study_lepto_distribution' => 'Leptospirosis LSGD Distribution',
+                    'study_hepa_distribution' => 'Hepatitis A LSGD Distribution',
+                    'study_outcome_trend' => 'Outcome-Based Trend Analysis'
+                ]
+            ],
+            'disease_categories' => [
+                'title' => 'Disease Categorization',
+                'submodules' => [
+                    'study_transmission_trend' => 'Transmission Trends',
+                    'study_vector_disease' => 'Vector-Borne Diseases',
+                    'study_water_disease' => 'Waterborne Diseases',
+                    'study_air_disease' => 'Airborne Diseases',
+                    'study_blood_disease' => 'Blood-Borne Diseases',
+                    'study_zoonotic_disease' => 'Zoonotic Diseases'
+                ]
+            ],
+            'workforce_governance' => [
+                'title' => 'Workforce & Governance',
+                'submodules' => [
+                    'study_committee_member' => 'One Health Committee Members',
+                    'study_response_workforce' => 'Pandemic Response Workforce',
+                    'study_screening_checkpoint' => 'Screening Checkpoints',
+                    'study_control_room_team' => 'Key Control Room Team'
+                ]
+            ],
+            'triggers_protocols' => [
+                'title' => 'Triggers & Protocols',
+                'submodules' => [
+                    'study_warning_trigger' => 'Early Warning Triggers',
+                    'study_communicator' => 'Key Communicators',
+                    'study_reporting_schedule' => 'Reporting Schedule & Protocol'
+                ]
+            ],
+            'resources_collaboration' => [
+                'title' => 'Resources & Collaboration',
+                'submodules' => [
+                    'study_resource_inventory' => 'Resource Inventory Contacts',
+                    'study_collaboration' => 'NGOs & CSR Collaboration',
+                    'study_coordination' => 'Interdepartmental Coordination',
+                    'study_facility_conversion' => 'Community Facilities Conversion'
+                ]
+            ],
         ];
 
-        // Default to overview if no sectionId or invalid sectionId
-        if (!$sectionId || !array_key_exists($sectionId, $modules)) {
+        // Retrieve and append dynamic user sections
+        $dynamicSections = $entity->planSections;
+        foreach ($dynamicSections as $sec) {
+            $modules['section_' . $sec->id] = $sec->title;
+        }
+
+        // Helper to check if a key exists anywhere in modules
+        $isValid = false;
+        $activeModuleTitle = '';
+        
+        if ($sectionId) {
+            if (array_key_exists($sectionId, $modules) && !is_array($modules[$sectionId])) {
+                $isValid = true;
+                $activeModuleTitle = $modules[$sectionId];
+            } else {
+                foreach ($modules as $groupKey => $group) {
+                    if (is_array($group) && isset($group['submodules']) && array_key_exists($sectionId, $group['submodules'])) {
+                        $isValid = true;
+                        $activeModuleTitle = $group['submodules'][$sectionId];
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!$isValid) {
             $sectionId = 'overview';
+            $activeModuleTitle = 'Nutshell Overview';
         }
         $activeModule = $sectionId;
         
@@ -116,6 +191,40 @@ class PlanController extends Controller
         $subdivisionsList = collect();
         $healthcareList = collect();
         $alternativeList = collect();
+        $activeSectionContent = null;
+        $studyRecords = collect();
+
+        // If it is a dynamic section
+        if (str_starts_with($activeModule, 'section_')) {
+            $activeSectionId = (int) substr($activeModule, 8);
+            $activeSectionContent = $dynamicSections->firstWhere('id', $activeSectionId);
+        }
+
+        // If it is an Excel study module table
+        if (str_starts_with($activeModule, 'study_')) {
+            $query = \Illuminate\Support\Facades\DB::table($activeModule);
+            
+            if ($type === 'district') {
+                $blockIntIds = \App\Models\Block::where('distric_int_id', $entity->district_code)->pluck('block_int_id');
+                $query->whereIn('block_int_id', $blockIntIds);
+            } elseif ($type === 'block') {
+                $query->where('block_int_id', $entity->block_int_id);
+            } elseif ($type === 'localbody') {
+                $block = $entity->block;
+                $blockIntId = $block ? $block->block_int_id : 0;
+                $query->where('block_int_id', $blockIntId);
+                
+                // If table has 'lsgd' column, filter by GP name
+                if (Schema::hasColumn($activeModule, 'lsgd')) {
+                    $query->where('lsgd', 'like', '%' . $entity->name . '%');
+                }
+            } elseif ($type === 'institution') {
+                $block = $entity->localbody ? $entity->localbody->block : null;
+                $blockIntId = $block ? $block->block_int_id : 39;
+                $query->where('block_int_id', $blockIntId);
+            }
+            $studyRecords = $query->get();
+        }
         
         if ($type === 'district') {
             $distCode = $entity->district_code;
@@ -206,7 +315,11 @@ class PlanController extends Controller
             $overviewStats['total_oxygen_storage'] = $entity->oxygen_storage_liters;
         }
 
-        return view('plans.show', compact('entity', 'type', 'modules', 'activeModule', 'overviewStats', 'subdivisionsList', 'healthcareList', 'alternativeList'));
+        return view('plans.show', compact(
+            'entity', 'type', 'modules', 'activeModule', 'activeModuleTitle', 
+            'overviewStats', 'subdivisionsList', 'healthcareList', 'alternativeList', 
+            'activeSectionContent', 'studyRecords'
+        ));
     }
 
     /**

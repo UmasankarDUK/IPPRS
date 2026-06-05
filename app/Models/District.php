@@ -48,6 +48,6 @@ class District extends Model
 
     public function planSections()
     {
-        return $this->morphMany(PlanSection::class, 'planable')->orderBy('section_order');
+        return $this->morphMany(PlanSection::class, 'planable', 'planable_type', 'planable_id', 'district_code')->orderBy('section_order');
     }
 }
